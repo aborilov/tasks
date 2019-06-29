@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"tasks/pkg/task/model"
+	"tasks/pkg/user"
 	userModel "tasks/pkg/user/model"
 	"testing"
 
@@ -55,6 +56,44 @@ func TestUpdate(t *testing.T) {
 	task, err := service.Update(ctx, task)
 	assert.NoError(t, err)
 	assert.NotNil(t, task)
+	repo.AssertExpectations(t)
+}
+
+func TestArchive(t *testing.T) {
+	repo, service := getServices()
+	ctx := context.Background()
+	u := userModel.User{Name: "test", Role: userModel.RoleAdmin}
+	ctx = user.NewContext(ctx, u)
+	desc := "some test task"
+	task := &model.Task{ID: 1, Description: desc, Status: model.StatusArchived}
+	repoInput := &model.Task{ID: 1, Description: desc, Status: model.StatusArchived}
+	repoOutput := &model.Task{ID: 1, Description: desc, Status: model.StatusArchived}
+	repo.On("Update", ctx, repoInput).Return(repoOutput, nil)
+	task, err := service.Update(ctx, task)
+	assert.NoError(t, err)
+	assert.NotNil(t, task)
+	repo.AssertExpectations(t)
+}
+
+func TestArchivePermissionDenied(t *testing.T) {
+	repo, service := getServices()
+	ctx := context.Background()
+	u := userModel.User{Name: "test", Role: userModel.RoleUser}
+	ctx = user.NewContext(ctx, u)
+	desc := "some test task"
+	task := &model.Task{ID: 1, Description: desc, Status: model.StatusArchived}
+	task, err := service.Update(ctx, task)
+	assert.Equal(t, userModel.ErrPermissionDenied, err)
+	repo.AssertExpectations(t)
+}
+
+func TestArchiveUnAuthorized(t *testing.T) {
+	repo, service := getServices()
+	ctx := context.Background()
+	desc := "some test task"
+	task := &model.Task{ID: 1, Description: desc, Status: model.StatusArchived}
+	task, err := service.Update(ctx, task)
+	assert.Equal(t, userModel.ErrUnAuthorized, err)
 	repo.AssertExpectations(t)
 }
 

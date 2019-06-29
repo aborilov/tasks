@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"tasks/pkg/task/model"
+	"tasks/pkg/user"
 	userModel "tasks/pkg/user/model"
 )
 
@@ -25,6 +26,15 @@ func (s *service) Add(ctx context.Context, task *model.Task) (*model.Task, error
 }
 
 func (s *service) Update(ctx context.Context, task *model.Task) (*model.Task, error) {
+	if task.Status == model.StatusArchived {
+		user, ok := user.FromContext(ctx)
+		if !ok {
+			return nil, userModel.ErrUnAuthorized
+		}
+		if user.Role != userModel.RoleAdmin {
+			return nil, userModel.ErrPermissionDenied
+		}
+	}
 	return s.repo.Update(ctx, task)
 }
 
