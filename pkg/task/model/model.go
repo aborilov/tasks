@@ -7,3 +7,7 @@ type Task struct {
 	Description string
 	Assigned    []int64
 }
+
+func (t *Task) String() string {
+	return t.Description
+}
